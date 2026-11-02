@@ -1,0 +1,16 @@
+# Environment
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Uploaded files
+app/uploads/projects/*
+!app/uploads/projects/.gitkeep
+
+# IDE
+.vscode/
+.idea/
