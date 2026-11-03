@@ -2,6 +2,7 @@
 venv/
 .env
 
+
 # Python
 __pycache__/
 *.pyc
@@ -14,3 +15,6 @@ app/uploads/projects/*
 # IDE
 .vscode/
 .idea/
+
+
+pass.txt
