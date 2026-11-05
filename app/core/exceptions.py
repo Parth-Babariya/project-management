@@ -30,6 +30,13 @@ class ConflictError(AppException):
     status_code = 409
 
 
+class PayloadTooLargeError(AppException):
+    status_code = 413
+
+
+class UnsupportedMediaTypeError(AppException):
+    status_code = 415
+
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
     return JSONResponse(

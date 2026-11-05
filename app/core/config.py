@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     # Uploads
     UPLOAD_DIR: Path = BASE_DIR / "app" / "uploads" / "projects"
     MAX_UPLOAD_SIZE_MB: int = 5
+    MAX_IMAGES_PER_UPLOAD: int = 10
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
+    PUBLIC_UPLOADS: bool = False  # True = also serve files publicly at /uploads/...
 
     @property
     def max_upload_size_bytes(self) -> int:

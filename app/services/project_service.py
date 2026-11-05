@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 import math
+import shutil
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.project import Project
@@ -7,6 +8,7 @@ from app.models.user import User
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.schemas.project import ProjectListParams, ProjectListResponse, ProjectResponse
+from app.core.config import settings
 
 
 class ProjectService:
@@ -55,6 +57,11 @@ class ProjectService:
             return project
         return self.projects.update(project, changes)
 
+    # def delete(self, project_id: int, user: User) -> None:
+    #     project = self.get_owned_project(project_id, user)
+    #     self.projects.delete(project)
+
     def delete(self, project_id: int, user: User) -> None:
         project = self.get_owned_project(project_id, user)
-        self.projects.delete(project)
+        self.projects.delete(project)  # image rows are removed by ON DELETE CASCADE
+        shutil.rmtree(settings.UPLOAD_DIR / str(project_id), ignore_errors=True)
