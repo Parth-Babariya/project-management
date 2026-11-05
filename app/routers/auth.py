@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.dependencies.database import get_db
 from app.schemas.user import Token, UserCreate, UserLogin, UserResponse
 from app.services.auth_service import AuthService
+from app.dependencies.auth import CurrentUser
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -35,3 +36,9 @@ def login_for_swagger(
 ):
     # Swagger sends the email in the "username" field
     return service.login(form.username, form.password)
+
+
+
+@router.get("/me", response_model=UserResponse, summary="Get the logged-in user")
+def read_current_user(current_user: CurrentUser):
+    return current_user
