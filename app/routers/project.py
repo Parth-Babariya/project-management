@@ -1,11 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.dependencies.auth import CurrentUser
 from app.dependencies.database import get_db
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.schemas.project import (
+    ProjectCreate,
+    ProjectListParams,
+    ProjectListResponse,
+    ProjectResponse,
+    ProjectUpdate,
+)
 from app.services.project_service import ProjectService
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -27,11 +33,24 @@ ProjectId = Annotated[int, Path(gt=0, description="Project ID")]
 )
 def create_project(data: ProjectCreate, current_user: CurrentUser, service: ServiceDep):
     return service.create(data, current_user)
-    
 
-@router.get("", response_model=list[ProjectResponse], summary="List my projects")
-def list_projects(current_user: CurrentUser, service: ServiceDep):
-    return service.list_for_user(current_user)
+
+# @router.get("", response_model=list[ProjectResponse], summary="List my projects")
+# def list_projects(current_user: CurrentUser, service: ServiceDep):
+#     return service.list_for_user(current_user)
+
+
+@router.get(
+    "",
+    response_model=ProjectListResponse,
+    summary="List my projects (filter by category/tags, paginated)",
+)
+def list_projects(
+    params: Annotated[ProjectListParams, Query()],
+    current_user: CurrentUser,
+    service: ServiceDep,
+):
+    return service.list_for_user(current_user, params)
 
 
 @router.get("/{project_id}", response_model=ProjectResponse, summary="Get project details")

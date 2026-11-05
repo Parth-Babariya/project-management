@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Literal
 
 MAX_TAGS = 20
 MAX_TAG_LENGTH = 50
@@ -108,3 +109,43 @@ class ProjectResponse(BaseModel):
     owner_id: int
     created_at: datetime
     updated_at: datetime
+
+
+
+
+class ProjectListParams(BaseModel):
+    """Query parameters for GET /projects."""
+
+    page: int = Field(default=1, ge=1, description="Page number, starts at 1")
+    size: int = Field(default=10, ge=1, le=100, description="Items per page (1-100)")
+    category: str | None = Field(default=None, max_length=50, description="Exact category match")
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Filter by tags. Repeat (?tags=a&tags=b) or comma-separate (?tags=a,b)",
+    )
+    tag_match: Literal["any", "all"] = Field(
+        default="any",
+        description="'any' = project has at least one tag, 'all' = project has every tag",
+    )
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = _clean_category(value)
+        return value or None  # blank ?category= is treated as no filter
+
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, value: list[str]) -> list[str]:
+        split = [part for item in value for part in item.split(",")]
+        return _clean_tags(split)
+
+
+class ProjectListResponse(BaseModel):
+    items: list[ProjectResponse]
+    total: int  # matching projects across all pages
+    page: int
+    size: int
+    pages: int  # total pages
