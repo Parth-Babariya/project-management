@@ -7,11 +7,11 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import Token, UserCreate
+from app.core.logging import logger
 
 # Used when the email doesn't exist, so the response takes the same time
 # as a wrong password (prevents guessing which emails are registered).
 _DUMMY_HASH = hash_password("dummy-password-for-timing")
-
 
 class AuthService:
     def __init__(self, db: Session):
@@ -20,16 +20,21 @@ class AuthService:
 
     def register(self, data: UserCreate) -> User:
         if self.users.get_by_email(data.email):
+            logger.warning("Registration failed: email already registered")
             raise ConflictError("Email is already registered")
         try:
-            return self.users.create(
+            user=self.users.create(
                 name=data.name,
                 email=data.email,
                 hashed_password=hash_password(data.password),
             )
+            logger.info("User registered successfully: user_id=%s", user.id)
+            return user
+
         except IntegrityError:
             # Two simultaneous sign-ups with the same email: the DB unique index catches it
             self.db.rollback()
+            logger.warning("Registration failed: database integrity conflict")
             raise ConflictError("Email is already registered")
 
     def authenticate(self, email: str, password: str) -> User:
@@ -43,6 +48,7 @@ class AuthService:
 
     def login(self, email: str, password: str) -> Token:
         user = self.authenticate(email, password)
+        logger.info("User logged in successfully: user_id=%s", user.id)
         return Token(
             access_token=create_access_token(user.id),
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,

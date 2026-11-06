@@ -16,6 +16,7 @@ from app.models.image import ProjectImage
 from app.models.user import User
 from app.repositories.image_repository import ImageRepository
 from app.services.project_service import ProjectService
+from app.core.logging import logger
 
 
 @dataclass
@@ -108,9 +109,16 @@ class ImageService:
                         file_size=len(item.content),
                     )
                 )
-            return self.images.add_many(records)
+            uploaded_images = self.images.add_many(records)
+            logger.info("Images uploaded successfully: project_id=%s user_id=%s count=%s", project_id, user.id, len(uploaded_images))
+            return uploaded_images
         except Exception:
             # Database or disk failure: don't leave orphan files behind
+            logger.exception(
+                "Image upload failed: project_id=%s user_id=%s",
+                project_id,
+                user.id,
+            )
             self.db.rollback()
             for path in saved:
                 path.unlink(missing_ok=True)
@@ -124,6 +132,11 @@ class ImageService:
         self.projects.get_owned_project(project_id, user)  # 404 / 403
         image = self.images.get_in_project(project_id, image_id)
         if image is None:
+            logger.warning(
+                "Image not found: project_id=%s image_id=%s",
+                project_id,
+                image_id,
+            )
             raise NotFoundError("Image not found")
 
         base = settings.UPLOAD_DIR.resolve()

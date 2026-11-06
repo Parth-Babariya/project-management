@@ -9,6 +9,7 @@ from app.repositories.project_repository import ProjectRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.schemas.project import ProjectListParams, ProjectListResponse, ProjectResponse
 from app.core.config import settings
+from app.core.logging import logger
 
 
 class ProjectService:
@@ -19,13 +20,21 @@ class ProjectService:
         """Return the project if it exists and belongs to the user."""
         project = self.projects.get_by_id(project_id)
         if project is None:
+            logger.warning("Project not found: project_id=%s", project_id)
             raise NotFoundError("Project not found")
         if project.owner_id != user.id:
+            logger.warning(
+                "Unauthorized project access: user_id=%s project_id=%s",
+                user.id,
+                project_id,
+            )
             raise ForbiddenError("You do not have access to this project")
         return project
 
     def create(self, data: ProjectCreate, user: User) -> Project:
-        return self.projects.create(owner_id=user.id, data=data.model_dump())
+        project=self.projects.create(owner_id=user.id, data=data.model_dump())
+        logger.info("Project created successfully: project_id=%s user_id=%s", project.id, user.id)
+        return project
 
     # def list_for_user(self, user: User) -> list[Project]:
     #     return self.projects.list_by_owner(user.id)
@@ -55,7 +64,9 @@ class ProjectService:
         changes = data.model_dump(exclude_unset=True)  # only fields the client sent
         if not changes:
             return project
-        return self.projects.update(project, changes)
+        updated_project=self.projects.update(project, changes)
+        logger.info("Project updated successfully: project_id=%s user_id=%s", updated_project.id, user.id)
+        return updated_project
 
     # def delete(self, project_id: int, user: User) -> None:
     #     project = self.get_owned_project(project_id, user)
@@ -65,3 +76,10 @@ class ProjectService:
         project = self.get_owned_project(project_id, user)
         self.projects.delete(project)  # image rows are removed by ON DELETE CASCADE
         shutil.rmtree(settings.UPLOAD_DIR / str(project_id), ignore_errors=True)
+        logger.info(
+            "Project deleted successfully: project_id=%s user_id=%s",
+            project_id,
+            user.id,
+        )
+        
+    

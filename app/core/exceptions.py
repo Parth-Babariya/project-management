@@ -1,5 +1,11 @@
-from fastapi import Request
+import logging
+
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+
+logger = logging.getLogger("app")
 
 
 class AppException(Exception):
@@ -37,10 +43,3 @@ class PayloadTooLargeError(AppException):
 class UnsupportedMediaTypeError(AppException):
     status_code = 415
 
-async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
-    headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers=headers,
-    )

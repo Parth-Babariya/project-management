@@ -1,16 +1,30 @@
 from contextlib import asynccontextmanager
+import logging
+
 
 from fastapi import Depends, FastAPI, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+
+
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.dependencies.database import get_db
-from app.core.exceptions import AppException, app_exception_handler
 from app.routers import auth, image, project
+from app.core.handlers import register_exception_handlers
+from app.core.logging import setup_logging
+
+setup_logging()
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+)
 
 
 @asynccontextmanager
@@ -29,7 +43,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(AppException, app_exception_handler)
+
+register_exception_handlers(app)
+
 app.include_router(auth.router)
 app.include_router(project.router)
 app.include_router(image.router)
